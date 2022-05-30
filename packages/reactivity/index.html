@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <!-- <script src="./dist/reactivity.global.js"></script> -->
+  <div id="app"></div>
+
+  <!-- 官方的 -->
+  <!-- <script src="../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  
+  <!-- 自己实现的 -->
+  <script src="./dist/reactivity.global.js"></script>
+  <script>
+    // effect 代表的是副作用函数，如果函数依赖发生改变，他就重新执行
+    // reactive 将数据变成响应式 相当于proxy
+    // shallowRactive,readonly,shallowReadonly
+    const {effect,reactive} = VueReactivity;
+    let target = {name:"david",age:12,address:{num:567}}
+    const state = reactive(target)
+    const state2 = reactive(target)
+    console.log(state === state2)
+    //set 和 map 也可以劫持
+
+    effect(() => {
+      state.age = Math.random(10);
+      document.getElementById("app").innerHTML = `${state.name}今年${state.age}`
+    })
+    setTimeout(() =>{
+      state.age = 13
+    },1000)
+  </script>
+</body>
+</html>
