@@ -20,18 +20,29 @@
     // reactive 将数据变成响应式 相当于proxy
     // shallowRactive,readonly,shallowReadonly
     const {effect,reactive} = VueReactivity;
-    let target = {name:"david",age:12,address:{num:567}}
+    let target = {name:"david",age:12,address:{num:567},flag:true}
     const state = reactive(target)
-    const state2 = reactive(target)
-    console.log(state === state2)
-    //set 和 map 也可以劫持
+    // const state2 = reactive(target)
+    // console.log(state === state2)
+    // //set 和 map 也可以劫持
 
+    // effect(() => {
+    //   state.age = Math.random(10);
+    //   document.getElementById("app").innerHTML = `${state.name}今年${state.age}`
+    // })
+    // setTimeout(() =>{
+    //   state.age = 13
+    // },1000)
     effect(() => {
-      state.age = Math.random(10);
-      document.getElementById("app").innerHTML = `${state.name}今年${state.age}`
+      console.log("render")
+      document.getElementById("app").innerHTML = state.flag ? "姓名:"+state.name : "年龄:"+state.age
     })
-    setTimeout(() =>{
-      state.age = 13
+    setTimeout(() => {
+      state.flag = false
+      setTimeout(() => {
+        console.log("修改了name，原则不重新渲染")
+        state.name = "jack"
+      },1000)
     },1000)
   </script>
 </body>

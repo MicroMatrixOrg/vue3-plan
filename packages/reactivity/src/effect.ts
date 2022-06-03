@@ -1,5 +1,13 @@
 export let activeEffect = undefined
 
+function clearupEffect(effect: ReactiveEffect) {
+  let { deps } = effect
+  for (let i = 0; i < deps.length; i++) {
+    deps[i].delete(effect)
+  }
+  effect.deps.length = 0
+}
+
 class ReactiveEffect {
   // 这里代表在实例上新增active属性
   public active = true // 这个effect默认是激活状态
@@ -16,7 +24,11 @@ class ReactiveEffect {
     try {
       this.parent = activeEffect
       activeEffect = this
-      this.fn() // 当稍后调用取只操作的时候就可以获取到这个全局的activeEffect了
+
+      //在执行用户函数之前把依赖清空，再次收集
+      clearupEffect(this)
+
+      return this.fn() // 当稍后调用取只操作的时候就可以获取到这个全局的activeEffect了
     } finally {
       activeEffect = this.parent
     }
@@ -75,12 +87,17 @@ export function track(target, type, key) {
 export function trigger(target, type, key, value, oldValue) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return //触发的值不在模版中
-  const effects = depsMap.get(key)
-  effects &&
+  let effects = depsMap.get(key)
+
+  // 此处做逻辑修改，因为set在删除之后，再做添加，那么会造成死循环，有些方法会对数据拷贝之后再做修改
+  // 可以避免这个问题
+  if (effects) {
+    effects = new Set(effects)
     effects.forEach((effect) => {
       if (activeEffect !== effect) effect.run() // 如果这里直接就写effect.run()，那么会遇到这种情况，在模版中赋值，那么也会触发这个，
       // 然后又通过了依赖收集的时候，运行它的第一次run（）。就会导致循环调用，爆栈，
       //所以这里需要加一个判断是否是当前的effect,如果是的话，就忽略这一次的赋值触发的run();
       //注意目前的代码是不支持异步的
     })
+  }
 }
