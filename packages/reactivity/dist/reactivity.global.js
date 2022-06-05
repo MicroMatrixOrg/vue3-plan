@@ -42,6 +42,7 @@ var VueReactivity = (() => {
       this.deps = [];
     }
     run() {
+      console.log(this);
       if (!this.active) {
         this.fn();
       }
@@ -89,7 +90,6 @@ var VueReactivity = (() => {
     if (!depsMap)
       return;
     let effects = depsMap.get(key);
-    debugger;
     if (effects) {
       effects = new Set(effects);
       effects.forEach((effect2) => {
