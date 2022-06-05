@@ -95,7 +95,6 @@ export function trigger(target, type, key, value, oldValue) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return //触发的值不在模版中
   let effects = depsMap.get(key)
-  debugger
   // 此处做逻辑修改，因为set在删除之后，再做添加，那么会造成死循环，有些方法会对数据拷贝之后再做修改
   // 可以避免这个问题
   if (effects) {
