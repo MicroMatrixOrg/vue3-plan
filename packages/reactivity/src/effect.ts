@@ -13,7 +13,7 @@ class ReactiveEffect {
   public active = true // 这个effect默认是激活状态
   public parent = null // 记录当前effect的父亲是谁，用作返回
   public deps = [] // 记录当前的effect都记录了哪些属性
-  constructor(public fn) {} // 用户传递的参数也会绑定在this上 相当于this.fn = fn;
+  constructor(public fn, public schedule) {} // 用户传递的参数也会绑定在this上 相当于this.fn = fn;
   run() {
     // run就是执行effect
     if (!this.active) {
@@ -27,18 +27,25 @@ class ReactiveEffect {
 
       //在执行用户函数之前把依赖清空，再次收集
       clearupEffect(this)
-
       return this.fn() // 当稍后调用取只操作的时候就可以获取到这个全局的activeEffect了
     } finally {
       activeEffect = this.parent
     }
   }
+  stop() {
+    this.active = false
+    clearupEffect(this)
+  }
 }
 
-export function effect(fn) {
+export function effect(fn, options: any = {}) {
   // 这里的fn可以根据状态的变化，重新执行，effect可以嵌套着写
-  const _effect = new ReactiveEffect(fn) //创建响应式的effect
+  const _effect = new ReactiveEffect(fn, options.schedule) //创建响应式的effect
   _effect.run() //默认先执行一次
+
+  const runner = _effect.run.bind(_effect)
+  runner.effect = _effect
+  return runner
 }
 
 // 实例代码
@@ -88,13 +95,20 @@ export function trigger(target, type, key, value, oldValue) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return //触发的值不在模版中
   let effects = depsMap.get(key)
-
+  debugger
   // 此处做逻辑修改，因为set在删除之后，再做添加，那么会造成死循环，有些方法会对数据拷贝之后再做修改
   // 可以避免这个问题
   if (effects) {
     effects = new Set(effects)
     effects.forEach((effect) => {
-      if (activeEffect !== effect) effect.run() // 如果这里直接就写effect.run()，那么会遇到这种情况，在模版中赋值，那么也会触发这个，
+      if (activeEffect !== effect) {
+        if (effect.schedule) {
+          effect.schedule() // 用户传入schedule的时候，就调用回调
+        } else {
+          effect.run() // 否则就刷新
+        }
+      }
+      // 如果这里直接就写effect.run()，那么会遇到这种情况，在模版中赋值，那么也会触发这个，
       // 然后又通过了依赖收集的时候，运行它的第一次run（）。就会导致循环调用，爆栈，
       //所以这里需要加一个判断是否是当前的effect,如果是的话，就忽略这一次的赋值触发的run();
       //注意目前的代码是不支持异步的

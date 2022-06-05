@@ -33,17 +33,42 @@
     // setTimeout(() =>{
     //   state.age = 13
     // },1000)
-    effect(() => {
-      console.log("render")
-      document.getElementById("app").innerHTML = state.flag ? "姓名:"+state.name : "年龄:"+state.age
-    })
-    setTimeout(() => {
-      state.flag = false
-      setTimeout(() => {
-        console.log("修改了name，原则不重新渲染")
-        state.name = "jack"
-      },1000)
-    },1000)
+    // effect(() => {
+    //   console.log("render")
+    //   document.getElementById("app").innerHTML = state.flag ? "姓名:"+state.name : "年龄:"+state.age
+    // })
+    // setTimeout(() => {
+    //   state.flag = false
+    //   setTimeout(() => {
+    //     console.log("修改了name，原则不重新渲染")
+    //     state.name = "jack"
+    //   },1000)
+    // },1000)
+    let flag = false;
+    let runner = effect(() => {
+      document.getElementById("app").innerHTML = "年龄:"+state.age 
+    },{
+      schedule(){
+      if(!flag){
+        flag = true;
+        setTimeout(() => {
+          runner();
+          flag = false;
+        },1000)
+      }
+    }}
+    )
+    // setTimeout(() => {
+    //   state.age = 13;
+    //   console.log("更新了")
+    // },1000)
+
+    state.age = 1000;
+    state.age = 2000;
+    state.age = 3000;
+    state.age = 4000;
+    state.age = 5000;
+
   </script>
 </body>
 </html>

@@ -34,8 +34,9 @@ var VueReactivity = (() => {
     effect2.deps.length = 0;
   }
   var ReactiveEffect = class {
-    constructor(fn) {
+    constructor(fn, schedule) {
       this.fn = fn;
+      this.schedule = schedule;
       this.active = true;
       this.parent = null;
       this.deps = [];
@@ -53,10 +54,17 @@ var VueReactivity = (() => {
         activeEffect = this.parent;
       }
     }
+    stop() {
+      this.active = false;
+      clearupEffect(this);
+    }
   };
-  function effect(fn) {
-    const _effect = new ReactiveEffect(fn);
+  function effect(fn, options = {}) {
+    const _effect = new ReactiveEffect(fn, options.schedule);
     _effect.run();
+    const runner = _effect.run.bind(_effect);
+    runner.effect = _effect;
+    return runner;
   }
   var targetMap = /* @__PURE__ */ new WeakMap();
   function track(target, type, key) {
@@ -81,11 +89,17 @@ var VueReactivity = (() => {
     if (!depsMap)
       return;
     let effects = depsMap.get(key);
+    debugger;
     if (effects) {
       effects = new Set(effects);
       effects.forEach((effect2) => {
-        if (activeEffect !== effect2)
-          effect2.run();
+        if (activeEffect !== effect2) {
+          if (effect2.schedule) {
+            effect2.schedule();
+          } else {
+            effect2.run();
+          }
+        }
       });
     }
   }
