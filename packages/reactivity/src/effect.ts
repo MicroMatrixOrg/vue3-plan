@@ -15,6 +15,7 @@ class ReactiveEffect {
   public deps = [] // 记录当前的effect都记录了哪些属性
   constructor(public fn, public schedule) {} // 用户传递的参数也会绑定在this上 相当于this.fn = fn;
   run() {
+    console.log(this)
     // run就是执行effect
     if (!this.active) {
       // 如果是非激活状态就是非激活状态，只需要执行函数，不需要进行依赖收集
@@ -95,7 +96,6 @@ export function trigger(target, type, key, value, oldValue) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return //触发的值不在模版中
   let effects = depsMap.get(key)
-  debugger
   // 此处做逻辑修改，因为set在删除之后，再做添加，那么会造成死循环，有些方法会对数据拷贝之后再做修改
   // 可以避免这个问题
   if (effects) {
