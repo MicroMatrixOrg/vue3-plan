@@ -1,4 +1,6 @@
 import { track, trigger } from './effect'
+import { isObject } from '@vue/shared'
+import { reactive } from './reactive'
 
 export const enum ReactiveFlags {
   IS_RECEIVE = `__v_isReactive`,
@@ -15,7 +17,13 @@ export let baseHandles = {
     }
     // console.log(key)
     track(target, 'get', key) // 收集effect中的那些属性需要在更新的时候触发渲染
-    return Reflect.get(target, key, recevier)
+    //如果返回的是对象，那么就需要在进行一个代理
+    // return Reflect.get(target, key, recevier)
+    let res = Reflect.get(target, key, recevier)
+    if (isObject(res)) {
+      return reactive(res) // 深度代理实现
+    }
+    return res
   },
   set(target, key, value, recevier) {
     // target[key] = value

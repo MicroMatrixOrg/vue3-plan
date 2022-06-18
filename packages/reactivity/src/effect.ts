@@ -8,14 +8,13 @@ function clearupEffect(effect: ReactiveEffect) {
   effect.deps.length = 0
 }
 
-class ReactiveEffect {
+export class ReactiveEffect {
   // 这里代表在实例上新增active属性
   public active = true // 这个effect默认是激活状态
   public parent = null // 记录当前effect的父亲是谁，用作返回
   public deps = [] // 记录当前的effect都记录了哪些属性
   constructor(public fn, public schedule) {} // 用户传递的参数也会绑定在this上 相当于this.fn = fn;
   run() {
-    console.log(this)
     // run就是执行effect
     if (!this.active) {
       // 如果是非激活状态就是非激活状态，只需要执行函数，不需要进行依赖收集
@@ -79,17 +78,23 @@ export function track(target, type, key) {
   if (!dep) {
     depsMap.set(key, (dep = new Set()))
   }
-  let shouldTrack = !dep.has(activeEffect) //一个属性多次依赖同一个effect那么去重
-  if (shouldTrack) {
-    dep.add(activeEffect)
-    activeEffect.deps.push(dep) // 让deps记录住对应的dep，稍后在清理的地方用到
-  }
+  trackEffect(dep)
   // 这里单向收集了这个依赖，对象的属性->effect
   // 但是这样不方便。例如你有这么一个模版渲染
   // effect(() => {flag ? state.age : state.name})
   // 那么在你flag判断为true和false的时候依赖的关联是不一样的
   // 所以我们也需要收集effect -> 属性
   // 在 ReactiveEffect上添加一个数组，来收集当前effect记录了哪些属性
+}
+
+export function trackEffect(dep: any) {
+  if (activeEffect) {
+    let shouldTrack = !dep.has(activeEffect) //一个属性多次依赖同一个effect那么去重
+    if (shouldTrack) {
+      dep.add(activeEffect)
+      activeEffect.deps.push(dep) // 让deps记录住对应的dep，稍后在清理的地方用到
+    }
+  }
 }
 
 export function trigger(target, type, key, value, oldValue) {
@@ -99,19 +104,23 @@ export function trigger(target, type, key, value, oldValue) {
   // 此处做逻辑修改，因为set在删除之后，再做添加，那么会造成死循环，有些方法会对数据拷贝之后再做修改
   // 可以避免这个问题
   if (effects) {
-    effects = new Set(effects)
-    effects.forEach((effect) => {
-      if (activeEffect !== effect) {
-        if (effect.schedule) {
-          effect.schedule() // 用户传入schedule的时候，就调用回调
-        } else {
-          effect.run() // 否则就刷新
-        }
-      }
-      // 如果这里直接就写effect.run()，那么会遇到这种情况，在模版中赋值，那么也会触发这个，
-      // 然后又通过了依赖收集的时候，运行它的第一次run（）。就会导致循环调用，爆栈，
-      //所以这里需要加一个判断是否是当前的effect,如果是的话，就忽略这一次的赋值触发的run();
-      //注意目前的代码是不支持异步的
-    })
+    triggerEffect(effects)
   }
+}
+
+export function triggerEffect(effects) {
+  effects = new Set(effects)
+  effects.forEach((effect) => {
+    if (activeEffect !== effect) {
+      if (effect.schedule) {
+        effect.schedule() // 用户传入schedule的时候，就调用回调
+      } else {
+        effect.run() // 否则就刷新
+      }
+    }
+    // 如果这里直接就写effect.run()，那么会遇到这种情况，在模版中赋值，那么也会触发这个，
+    // 然后又通过了依赖收集的时候，运行它的第一次run（）。就会导致循环调用，爆栈，
+    //所以这里需要加一个判断是否是当前的effect,如果是的话，就忽略这一次的赋值触发的run();
+    //注意目前的代码是不支持异步的
+  })
 }

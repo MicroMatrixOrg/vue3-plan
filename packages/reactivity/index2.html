@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>computed</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="./dist/reactivity.global.js"></script>
+    <script>
+      // effect 代表的是副作用函数，如果函数依赖发生改变，他就重新执行
+      // reactive 将数据变成响应式 相当于proxy
+      // shallowRactive,readonly,shallowReadonly
+      const { effect, reactive, computed } = VueReactivity
+      let target = { firstName: '张', lastName: '四' }
+      const state = reactive(target)
+      let app = document.getElementById('app')
+      const fullName = computed(() => {
+        console.log('runner')
+        return state.firstName + state.lastName
+      })
+      effect(() => {
+        return (app.innerHTML = fullName.value)
+      })
+
+      setTimeout(() => {
+        state.firstName = '王'
+      }, 1000)
+    </script>
+  </body>
+</html>
