@@ -2,6 +2,10 @@ import { isObject } from '@vue/shared'
 import { baseHandles, ReactiveFlags } from './baseHandles'
 const reactiveMap = new WeakMap() // key只能是对象
 
+export function isReactive(value) {
+  return !!(value && value[ReactiveFlags.IS_RECEIVE])
+}
+
 // 将数据转化成响应式数据,只能做对象的代理
 // 同一个对象呗代理多次返回同一个代理
 // 代理再次被代理，返回原代理

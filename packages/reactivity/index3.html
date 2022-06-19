@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>computed</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- 官方的 -->
+    <!-- <script src="../../node_modules/vue/dist/vue.global.js"></script> -->
+    <script src="./dist/reactivity.global.js"></script>
+    <script>
+      // effect 代表的是副作用函数，如果函数依赖发生改变，他就重新执行
+      // reactive 将数据变成响应式 相当于proxy
+      // shallowRactive,readonly,shallowReadonly
+      const { reactive, watch } = VueReactivity
+      const state = reactive({ name: 'jw', address: { num: 1 } })
+      let getMoreData = (time) => {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            resolve(state.address.num)
+          }, time)
+        })
+      }
+
+      watch(
+        () => state.address.num,
+        async (newValue, oldValue, onCleanup) => {
+          let clean = false
+          onCleanup(() => {
+            clean = true
+          })
+          let i = Math.random() * 10000
+          console.log(i)
+          let text = await getMoreData(i)
+          if (!clean) {
+            document.getElementById('app').innerHTML = text
+          }
+        }
+      )
+      state.address.num = 456
+      state.address.num = 123
+      state.address.num = 678
+      state.address.num = 999
+    </script>
+  </body>
+</html>
