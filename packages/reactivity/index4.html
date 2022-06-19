@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div class="" id="app"></div>
+  <script src="./dist/reactivity.global.js"></script>
+  <script>
+    const { reactive, effect,toRef,ref,toRefs,proxyRefs } = VueReactivity
+    // let people = reactive({name:"张三",age:99})
+   let name = ref("张三")
+   let age = ref(23)
+   let people = proxyRefs({name,age})
+  // let {name,age} = toRefs(people)
+    effect(() => {
+      app.innerHTML = `${people.name}今年${people.age}岁`
+    })
+
+    setTimeout(() => {
+      people.name = "利斯"
+    },1000)
+  </script>
+</body>
+</html>
