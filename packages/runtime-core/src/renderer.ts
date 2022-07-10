@@ -69,30 +69,35 @@ export function createRenderer(
 
   const processText = (n1, n2, container) => {
     if (n1 == null) {
-      hostInsert((n2.el = hostCreateElement(n2.children)), container)
+      hostInsert((n2.el = hostCreateText(n2.children)), container)
     }
   }
-
+  const processElement = (n1, n2, container) => {
+    if (n1 === null) {
+      mountElement(n2, container)
+    } else {
+    }
+  }
   const patch = (n1: any, n2: any, container: any) => {
     // n2 可能是个文本
     if (n1 === n2) return
     const { type, shapeFlag } = n2
-
-    if (n1 == null) {
-      // 初次渲染
-      // 后续还有组件的初次渲染，目前是元素的初始化渲染
-      switch (type) {
-        case Text:
-          processText(n1, n2, container)
-          break
-        default:
-          if (shapeFlag & ShapeFlags.ELEMENT) {
-            mountElement(n2, container)
-          }
-      }
-    } else {
-      // 更新流程
+    switch (type) {
+      case Text:
+        processText(n1, n2, container)
+        break
+      default:
+        if (shapeFlag & ShapeFlags.ELEMENT) {
+          processElement(n1, n2, container)
+        }
     }
+    // if (n1 == null) {
+    //   // 初次渲染
+    //   // 后续还有组件的初次渲染，目前是元素的初始化渲染
+
+    // } else {
+    //   // 更新流程
+    // }
   }
 
   const unmount = (vnode) => {
@@ -120,3 +125,8 @@ export function createRenderer(
 
 // 文本的处理，需要自己增加类型，因为不能通过document.createElement('文本')
 // 如果传入null的时候在渲染时，则是卸载逻辑，需要将dom节点删除
+
+// 1) 更新逻辑：
+// - 如果前后完全没有关系，删除老的，添加新的
+// - 老的和新的一样，复用。属性可能不一样，再对比属性，更新属性
+// - 比儿子

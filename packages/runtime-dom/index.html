@@ -11,8 +11,8 @@
     <script src="./dist/runtime-dom.global.js"></script>
 
     <script>
-      let { createRenderer, h, render } = VueRuntimeDOM
-      console.log(createRenderer, h, render)
+      let { createRenderer, h, render, Text } = VueRuntimeDOM
+      console.log(Text)
 
       //渲染虚拟DOM
       // let renderer = createRenderer({
@@ -39,7 +39,7 @@
       //   ]),
       //   app
       // )
-      render(h(Text, '123'), app)
+      render(h(Text, { color: 'green' }, '123'), app)
     </script>
   </body>
 </html>

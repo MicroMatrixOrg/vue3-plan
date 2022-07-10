@@ -108,24 +108,27 @@ var VueRuntimeDOM = (() => {
     }
     const processText = (n1, n2, container) => {
       if (n1 == null) {
-        hostInsert(n2.el = hostCreateElement(n2.children), container);
+        hostInsert(n2.el = hostCreateText(n2.children), container);
+      }
+    };
+    const processElement = (n1, n2, container) => {
+      if (n1 === null) {
+        mountElement(n2, container);
+      } else {
       }
     };
     const patch = (n1, n2, container) => {
       if (n1 === n2)
         return;
       const { type, shapeFlag } = n2;
-      if (n1 == null) {
-        switch (type) {
-          case Text:
-            processText(n1, n2, container);
-            break;
-          default:
-            if (shapeFlag & 1 /* ELEMENT */) {
-              mountElement(n2, container);
-            }
-        }
-      } else {
+      switch (type) {
+        case Text:
+          processText(n1, n2, container);
+          break;
+        default:
+          if (shapeFlag & 1 /* ELEMENT */) {
+            processElement(n1, n2, container);
+          }
       }
     };
     const unmount = (vnode) => {
