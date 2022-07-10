@@ -108,7 +108,7 @@ var VueRuntimeDOM = (() => {
     }
     const processText = (n1, n2, container) => {
       if (n1 == null) {
-        hostInsert(n2.el = hostCreateElement(n2.children), container);
+        hostInsert(n2.el = hostCreateText(n2.children), container);
       }
     };
     const patch = (n1, n2, container) => {
