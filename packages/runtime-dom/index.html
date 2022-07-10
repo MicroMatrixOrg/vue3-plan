@@ -12,7 +12,6 @@
 
     <script>
       let { createRenderer, h, render, Text } = VueRuntimeDOM
-      console.log(Text)
 
       //渲染虚拟DOM
       // let renderer = createRenderer({
@@ -39,7 +38,25 @@
       //   ]),
       //   app
       // )
-      render(h(Text, { color: 'green' }, '123'), app)
+      render(
+        h('h1', { style: { color: 'green' } }, [
+          h('li', { key: 'a', style: { color: 'yellow' } }, 'a'),
+          h('li', { key: 'b' }, 'b'),
+          h('li', { key: 'c' }, 'c'),
+        ]),
+        app
+      )
+      setTimeout(() => {
+        render(
+          h('h1', { style: { color: 'green', backgroundColor: 'red' } }, [
+            h('li', { key: 'f' }, 'f'),
+            h('li', { key: 'a' }, 'a'),
+            h('li', { key: 'b' }, 'b'),
+            h('li', { key: 'c' }, 'c'),
+          ]),
+          app
+        )
+      }, 1000)
     </script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-export function patchStyle(el, prevValue, nextValue) {
+export function patchStyle(el, prevValue, nextValue = {}) {
   // 样式需要比较差异
   for (let key in nextValue) {
     // 用新的直接覆盖
@@ -7,7 +7,7 @@ export function patchStyle(el, prevValue, nextValue) {
 
   if (prevValue) {
     for (let key in prevValue) {
-      if (nextValue[key] === null) {
+      if (nextValue[key] == null) {
         el.style[key] = null
       }
     }

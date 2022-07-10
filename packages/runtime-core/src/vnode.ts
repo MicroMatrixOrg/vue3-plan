@@ -5,6 +5,14 @@ export const Text = Symbol('Text')
 export function isVnode(value) {
   return !!(value && value.__v_isVnode)
 }
+
+export function isSameVnode(n1, n2) {
+  // 比较策略
+  // 1) 比较2个节点的key
+  // 2) 比较2个节点的type
+  return n1.type == n2.type && n1.key === n2.key
+}
+
 // 虚拟节点有很多： 组件， 元素的、 文本的
 // 先写元素
 export function createVnode(type, props, children = null) {
