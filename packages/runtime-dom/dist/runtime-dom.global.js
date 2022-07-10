@@ -176,7 +176,7 @@ var VueRuntimeDOM = (() => {
     remove(child) {
       const parentNode = child.parentNode;
       if (parentNode) {
-        parentNode.remove(child);
+        parentNode.removeChild(child);
       }
     },
     setElementText(el, text) {
