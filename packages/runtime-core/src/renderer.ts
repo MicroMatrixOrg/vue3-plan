@@ -119,6 +119,7 @@ export function createRenderer(
         break
       }
       i++
+      // console.log(i)
     }
 
     // 从尾部比较
@@ -154,6 +155,49 @@ export function createRenderer(
           unmount(c1)
           i++
         }
+      }
+    }
+    // 乱序对比
+    console.log(i, e1, e2)
+    let s1 = i
+    let s2 = i
+
+    const keyToNewIndexMap = new Map()
+    for (let i = s2; i <= e2; i++) {
+      keyToNewIndexMap.set(c2[i].key, i)
+    }
+
+    // console.log(keyToNewIndexMap)
+
+    // 循环老的元素，看一下新的里面有没有，如果有就说要比较差异，没有就添加到列表中，老的有新的没有删除
+    let toBepatched = e2 - s2 + 1 // 新的总个数
+    const newIndexToOldIndex = new Array(toBepatched).fill(0) // 记录是否比对过的映射表
+    for (i = s1; i <= e1; i++) {
+      const oldChild = c1[i]
+      let newIndex = keyToNewIndexMap.get(oldChild.key) // 用老的孩子去新的里面找
+      if (newIndex == undefined) {
+        unmount(oldChild)
+      } else {
+        // 新的位置对应老的位置，如果数组里放的值大于零说明已经patch过了
+        newIndexToOldIndex[newIndex - s2] = i + 1 // 用来标记当前所path的位置
+        patch(oldChild, c2[newIndex], el)
+      }
+    }
+    console.log(newIndexToOldIndex)
+
+    // 需要移动位置
+    for (let i = toBepatched - 1; i >= 0; i--) {
+      let index = i + s2
+      let current = c2[index] // 找到最后一个
+      let anchor = index + 1 < c2.length ? c2[index + 1].el : null
+
+      if (newIndexToOldIndex[i] === 0) {
+        // 创建
+        patch(null, current, el, anchor)
+      } else {
+        // 说明比对过了新老儿子的，需要调动位置
+        hostInsert(current.el, el, anchor) // 复用了节点
+        // 目前无论如何都做了一遍倒叙插入，其实可以根据刚才的数组来减少插入的次数
       }
     }
   }
@@ -214,7 +258,6 @@ export function createRenderer(
     let el = (n2.el = n1.el)
     let oldProps = n1.props || {}
     let newProps = n2.props || {}
-    console.log(oldProps, newProps)
 
     patchProps(oldProps, newProps, el)
 
