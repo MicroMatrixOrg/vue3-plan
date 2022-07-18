@@ -192,6 +192,7 @@ export function createRenderer(
       let anchor = index + 1 < c2.length ? c2[index + 1].el : null
 
       if (newIndexToOldIndex[i] === 0) {
+        // 创建 [5 3 4 0] => [1,2] 最长递增子序列，因为不是发现有一些不需要更新，只要移动位置就行
         // 创建
         patch(null, current, el, anchor)
       } else {
