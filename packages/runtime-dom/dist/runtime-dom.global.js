@@ -44,7 +44,7 @@ var VueRuntimeDOM = (() => {
     return !!(value && value.__v_isVnode);
   }
   function isSameVnode(n1, n2) {
-    return n1.type == n2.type && n1.key === n2.key;
+    return n1.type === n2.type && n1.key === n2.key;
   }
   function createVnode(type, props, children = null) {
     let shapeFlag = isString(type) ? 1 /* ELEMENT */ : 0;
@@ -179,6 +179,36 @@ var VueRuntimeDOM = (() => {
           }
         }
       }
+      console.log(i, e1, e2);
+      let s1 = i;
+      let s2 = i;
+      const keyToNewIndexMap = /* @__PURE__ */ new Map();
+      for (let i2 = s2; i2 <= e2; i2++) {
+        keyToNewIndexMap.set(c2[i2].key, i2);
+      }
+      let toBepatched = e2 - s2 + 1;
+      const newIndexToOldIndex = new Array(toBepatched).fill(0);
+      for (i = s1; i <= e1; i++) {
+        const oldChild = c1[i];
+        let newIndex = keyToNewIndexMap.get(oldChild.key);
+        if (newIndex == void 0) {
+          unmount(oldChild);
+        } else {
+          newIndexToOldIndex[newIndex - s2] = i + 1;
+          patch(oldChild, c2[newIndex], el);
+        }
+      }
+      console.log(newIndexToOldIndex);
+      for (let i2 = toBepatched - 1; i2 >= 0; i2--) {
+        let index = i2 + s2;
+        let current = c2[index];
+        let anchor = index + 1 < c2.length ? c2[index + 1].el : null;
+        if (newIndexToOldIndex[i2] === 0) {
+          patch(null, current, el, anchor);
+        } else {
+          hostInsert(current.el, el, anchor);
+        }
+      }
     };
     const patchChildren = (n1, n2, el) => {
       let c1 = n1 && n1.children;
@@ -213,7 +243,6 @@ var VueRuntimeDOM = (() => {
       let el = n2.el = n1.el;
       let oldProps = n1.props || {};
       let newProps = n2.props || {};
-      console.log(oldProps, newProps);
       patchProps(oldProps, newProps, el);
       patchChildren(n1, n2, el);
     };
