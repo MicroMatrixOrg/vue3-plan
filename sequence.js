@@ -36,6 +36,7 @@ function getSequence (arr) {
       // 递增序列中采用二分查找是最快的
 
       start = 0;
+
       end = result.length - 1
       while (start < end) {
         middle = ((start + end) / 2) | 0
