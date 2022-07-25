@@ -1,0 +1,41 @@
+<!--
+ * @Author: David
+ * @Date: 2022-07-25 21:15:45
+ * @LastEditTime: 2022-07-25 21:56:25
+ * @LastEditors: David
+ * @Description: 
+ * @FilePath: \vue3-plan\packages\runtime-dom\component.html
+ * 可以输入预定的版权声明、个性签名、空行等
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="./dist/runtime-dom.global.js"></script>
+
+    <script>
+      let { createRenderer, h, render, Text, Fragment } = VueRuntimeDOM
+
+      const VueComponent = {
+        data() {
+          return { name: 'zs', age: 13 }
+        },
+
+        render() {
+          setTimeout(() => {
+            this.age++
+            this.name += '1'
+          }, 1000)
+          return h('p', `${this.name}今年${this.age}岁了`)
+        },
+      }
+      render(h(VueComponent), app)
+    </script>
+  </body>
+</html>

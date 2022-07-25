@@ -1,5 +1,9 @@
+import { reactive, ReactiveEffect } from '@vue/reactivity'
 import { isString, ShapeFlags } from '@vue/shared'
-import { createVnode, isSameVnode, Text } from './vnode'
+import { queueJob } from './scheduler'
+
+import { getSequence } from './sequence'
+import { createVnode, Fragment, isSameVnode, Text } from './vnode'
 
 export function createRenderer(
   renerOptions: {
@@ -172,6 +176,7 @@ export function createRenderer(
     // 循环老的元素，看一下新的里面有没有，如果有就说要比较差异，没有就添加到列表中，老的有新的没有删除
     let toBepatched = e2 - s2 + 1 // 新的总个数
     const newIndexToOldIndex = new Array(toBepatched).fill(0) // 记录是否比对过的映射表
+
     for (i = s1; i <= e1; i++) {
       const oldChild = c1[i]
       let newIndex = keyToNewIndexMap.get(oldChild.key) // 用老的孩子去新的里面找
@@ -183,8 +188,9 @@ export function createRenderer(
         patch(oldChild, c2[newIndex], el)
       }
     }
-    console.log(newIndexToOldIndex)
 
+    let increment = getSequence(newIndexToOldIndex)
+    let j = increment.length - 1
     // 需要移动位置
     for (let i = toBepatched - 1; i >= 0; i--) {
       let index = i + s2
@@ -196,9 +202,13 @@ export function createRenderer(
         // 创建
         patch(null, current, el, anchor)
       } else {
-        // 说明比对过了新老儿子的，需要调动位置
-        hostInsert(current.el, el, anchor) // 复用了节点
-        // 目前无论如何都做了一遍倒叙插入，其实可以根据刚才的数组来减少插入的次数
+        if (i != increment[j]) {
+          // 说明比对过了新老儿子的，需要调动位置
+          hostInsert(current.el, el, anchor) // 复用了节点
+          // 目前无论如何都做了一遍倒叙插入，其实可以根据刚才的数组来减少插入的次数
+        } else {
+          j--
+        }
       }
     }
   }
@@ -273,6 +283,59 @@ export function createRenderer(
       patchElement(n1, n2)
     }
   }
+  const processFragment = (n1, n2, container) => {
+    if (n1 == null) {
+      mountChildren(n2.children, container)
+    } else {
+      patchChildren(n1, n2, container)
+    }
+  }
+
+  const mountComponent = (vnode, container, anchor) => {
+    let { data = () => {}, render } = vnode.type // 这个就是用户写的内容
+    const state = reactive(data())
+    const instance = {
+      // 组件实例
+      state,
+      vnode, // v2中的源码中组建的虚拟节点叫$node  渲染的内容叫_vnode
+      subTree: null, // vnode组件的渲染节点 subTree渲染的组件内容
+      isMounted: false,
+      update: null,
+    }
+
+    const componentUpdateFn = () => {
+      // 区别是初始化还是要更新
+      if (!instance.isMounted) {
+        const subTree = render.call(state) // 作为this ，后续this会改
+        patch(null, subTree, container, anchor) // 创造了subTree的真实节点并且插入
+
+        instance.subTree = subTree
+
+        instance.isMounted = true
+      } else {
+        // 组件内部更新
+        const subTree = render.call(state) // 作为this ，后续this会改\
+        patch(instance.subTree, subTree, container, anchor)
+      }
+    }
+
+    // 组件的异步更新
+    const effect = new ReactiveEffect(componentUpdateFn, () =>
+      queueJob(instance.update)
+    )
+
+    let update = (instance.update = effect.run.bind(effect)) // 调用effect.run 强制组件更新
+    update()
+  }
+
+  const processComponent = (n1, n2, container, anchor) => {
+    // 统一处理组件，里面区分是普通的还是函数式组件
+    if (n1 == null) {
+      mountComponent(n2, container, anchor)
+    } else {
+      // 组件更新靠的是props
+    }
+  }
   const patch = (n1: any, n2: any, container: any, anchor = null) => {
     // n2 可能是个文本
 
@@ -286,9 +349,14 @@ export function createRenderer(
       case Text:
         processText(n1, n2, container)
         break
+      case Fragment: // 无用标签
+        processFragment(n1, n2, container)
+        break
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor)
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(n1, n2, container, anchor)
         }
     }
     // if (n1 == null) {

@@ -13,7 +13,7 @@ export class ReactiveEffect {
   public active = true // 这个effect默认是激活状态
   public parent = null // 记录当前effect的父亲是谁，用作返回
   public deps = [] // 记录当前的effect都记录了哪些属性
-  constructor(public fn, public schedule) {} // 用户传递的参数也会绑定在this上 相当于this.fn = fn;
+  constructor(public fn, public schedule?) {} // 用户传递的参数也会绑定在this上 相当于this.fn = fn;
   run() {
     // run就是执行effect
     if (!this.active) {
