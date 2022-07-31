@@ -23,9 +23,9 @@ const publicPropertyMap = {
 
 const publicInstanceProsy = {
   get(target, key) {
-    const { date, props } = target
-    if (date && hasOwn(date, key)) {
-      return date[key]
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      return data[key]
     } else if (props && hasOwn(props, key)) {
       return props[key]
     }
@@ -35,9 +35,9 @@ const publicInstanceProsy = {
     }
   },
   set(target, key, value) {
-    const { date, props } = target
-    if (date && hasOwn(date, key)) {
-      date[key] = value
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      data[key] = value
       return true
       // 用户操作的属性是代理对象，这里面屏蔽了
       // 但是我们可以通过instance.props 拿到真实的props

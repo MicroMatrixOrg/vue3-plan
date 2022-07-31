@@ -22,3 +22,35 @@ export function initProps(instance, rawProps) {
   instance.props = reactive(props)
   instance.attrs = attrs
 }
+
+const hasPropsChanged = (prevProps = {}, nextProps = {}) => {
+  const nextKeys = Object.keys(nextProps)
+  if (nextKeys.length !== Object.keys(prevProps).length) {
+    return true
+  }
+
+  for (let i = 0; i < nextKeys.length; i++) {
+    const key = nextKeys[i]
+    if (nextProps[key] !== prevProps[key]) {
+      return true
+    }
+  }
+
+  return false
+}
+export function updateProps(instance, prevProps, nextProps) {
+  //看一下属性有没有变化
+
+  // 值的变化，属性的个数是否发生变化
+  if (hasPropsChanged(prevProps, nextProps)) {
+    for (const key in nextProps) {
+      instance.props[key] = nextProps[key]
+    }
+
+    for (const key in instance.props) {
+      if (!hasOwn(nextProps, key)) {
+        delete instance.props[key]
+      }
+    }
+  }
+}

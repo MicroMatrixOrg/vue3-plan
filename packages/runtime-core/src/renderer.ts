@@ -1,7 +1,7 @@
-import { reactive, ReactiveEffect } from '@vue/reactivity'
-import { hasOwn, isString, ShapeFlags } from '@vue/shared'
+import { ReactiveEffect } from '@vue/reactivity'
+import { isString, ShapeFlags } from '@vue/shared'
 import { createComponentsInstance, setupComponent } from './component'
-import { initProps } from './componentProps'
+import { updateProps } from './componentProps'
 import { queueJob } from './scheduler'
 
 import { getSequence } from './sequence'
@@ -304,70 +304,6 @@ export function createRenderer(
     setupComponent(instance)
     // 3. 创建一个effect
     setupRenderEffect(instance, container, anchor)
-
-    // let { data = () => {}, render, props: propsOptions } = vnode.type // 这个就是用户写的内容
-    // const state = reactive(data())
-    // const instance = {
-    //   // 组件实例
-    //   state,
-    //   vnode, // v2中的源码中组建的虚拟节点叫$node  渲染的内容叫_vnode
-    //   subTree: null, // vnode组件的渲染节点 subTree渲染的组件内容
-    //   isMounted: false,
-    //   update: null,
-    //   propsOptions,
-    //   props: {},
-    //   attrs: {},
-    //   proxy: null,
-    // }
-    // // 实例，用户传入的props
-    // initProps(instance, vnode.props)
-    // instance.proxy = new Proxy(instance, {
-    //   get(target, key) {
-    //     const { state, props } = target
-    //     if (state && hasOwn(state, key)) {
-    //       return state[key]
-    //     } else if (props && hasOwn(props, key)) {
-    //       return props[key]
-    //     }
-    //     let getter = publicPropertyMap[key]
-    //     if (getter) {
-    //       return getter(target)
-    //     }
-    //   },
-    //   set(target, key, value) {
-    //     const { state, props } = target
-    //     if (state && hasOwn(state, key)) {
-    //       state[key] = value
-    //       return true
-    //       // 用户操作的属性是代理对象，这里面屏蔽了
-    //       // 但是我们可以通过instance.props 拿到真实的props
-    //     } else if (props && hasOwn(props, key)) {
-    //       console.warn(`attempting to mutate prop ${key as string}`)
-    //       return false
-    //     }
-    //     return false
-    //   },
-    // })
-    // const componentUpdateFn = () => {
-    //   // 区别是初始化还是要更新
-    //   if (!instance.isMounted) {
-    //     const subTree = render.call(instance.proxy) // 作为this ，后续this会改
-    //     patch(null, subTree, container, anchor) // 创造了subTree的真实节点并且插入
-    //     instance.subTree = subTree
-    //     instance.isMounted = true
-    //   } else {
-    //     // 组件内部更新
-    //     const subTree = render.call(instance.proxy) // 作为this ，后续this会改\
-    //     patch(instance.subTree, subTree, container, anchor)
-    //     instance.subTree = subTree
-    //   }
-    // }
-    // // 组件的异步更新
-    // const effect = new ReactiveEffect(componentUpdateFn, () =>
-    //   queueJob(instance.update)
-    // )
-    // let update = (instance.update = effect.run.bind(effect)) // 调用effect.run 强制组件更新
-    // update()
   }
   const setupRenderEffect = (instance, container, anchor) => {
     const { render } = instance
@@ -380,6 +316,7 @@ export function createRenderer(
         instance.isMounted = true
       } else {
         // 组件内部更新
+
         const subTree = render.call(instance.proxy) // 作为this ，后续this会改\
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
@@ -393,12 +330,24 @@ export function createRenderer(
     update()
   }
 
+  const updateComponent = (n1, n2) => {
+    // instance.props 是响应式，而且可以更改，属性的更新导致页面的重新渲染
+    const instance = (n2.component = n1.component) // 对于元素来说复用的是dom节点，对于组件来说复用的是实例
+    const { props: prevProps } = n1
+    const { props: nextProps } = n2
+
+    updateProps(instance, prevProps, nextProps) // 属性更新
+
+    // 后续插槽发生变化 逻辑核对updateProps不一样
+  }
+
   const processComponent = (n1, n2, container, anchor) => {
     // 统一处理组件，里面区分是普通的还是函数式组件
     if (n1 == null) {
       mountComponent(n2, container, anchor)
     } else {
       // 组件更新靠的是props
+      updateComponent(n1, n2)
     }
   }
   const patch = (n1: any, n2: any, container: any, anchor = null) => {
