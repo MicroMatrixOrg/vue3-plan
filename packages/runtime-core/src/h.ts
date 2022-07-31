@@ -12,7 +12,6 @@ import { createVnode, isVnode } from './vnode'
 export function h(type, propsChildren?: any, children?: any) {
   // 其余的除了3个之外的肯定都是孩子
   const l = arguments.length
-
   // h("div",{style:{color: "black"}})
   // h("div",h('span'))
   // h('div', [h('span'),h('span)])

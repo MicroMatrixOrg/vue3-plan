@@ -1,7 +1,7 @@
 <!--
  * @Author: David
  * @Date: 2022-07-25 21:15:45
- * @LastEditTime: 2022-07-25 21:56:25
+ * @LastEditTime: 2022-07-31 12:04:17
  * @LastEditors: David
  * @Description: 
  * @FilePath: \vue3-plan\packages\runtime-dom\component.html
@@ -22,20 +22,27 @@
     <script>
       let { createRenderer, h, render, Text, Fragment } = VueRuntimeDOM
 
+      // 组件的三大特性
+      // 1. 属性，属性变化组件如何更新
+      // 2. 插槽
+      // 3. 时间
       const VueComponent = {
+        props: {
+          address: String,
+          c: {},
+        },
         data() {
           return { name: 'zs', age: 13 }
         },
 
         render() {
-          setTimeout(() => {
-            this.age++
-            this.name += '1'
-          }, 1000)
-          return h('p', `${this.name}今年${this.age}岁了`)
+          return h('p', [this.address, this.$attrs.a, this.$attrs.b, this.c.n])
         },
       }
-      render(h(VueComponent), app)
+      render(
+        h(VueComponent, { address: '地铁运营', a: 1, b: 2, c: { n: 1 } }),
+        app
+      )
     </script>
   </body>
 </html>

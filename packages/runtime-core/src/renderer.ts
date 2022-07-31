@@ -1,5 +1,7 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity'
-import { isString, ShapeFlags } from '@vue/shared'
+import { hasOwn, isString, ShapeFlags } from '@vue/shared'
+import { createComponentsInstance, setupComponent } from './component'
+import { initProps } from './componentProps'
 import { queueJob } from './scheduler'
 
 import { getSequence } from './sequence'
@@ -291,39 +293,102 @@ export function createRenderer(
     }
   }
 
-  const mountComponent = (vnode, container, anchor) => {
-    let { data = () => {}, render } = vnode.type // 这个就是用户写的内容
-    const state = reactive(data())
-    const instance = {
-      // 组件实例
-      state,
-      vnode, // v2中的源码中组建的虚拟节点叫$node  渲染的内容叫_vnode
-      subTree: null, // vnode组件的渲染节点 subTree渲染的组件内容
-      isMounted: false,
-      update: null,
-    }
+  const publicPropertyMap = {
+    $attrs: (i) => i.attrs,
+  }
 
+  const mountComponent = (vnode, container, anchor) => {
+    // 1. 创造一个实例
+    let instance = (vnode.component = createComponentsInstance(vnode))
+    // 2. 给实例上赋值
+    setupComponent(instance)
+    // 3. 创建一个effect
+    setupRenderEffect(instance, container, anchor)
+
+    // let { data = () => {}, render, props: propsOptions } = vnode.type // 这个就是用户写的内容
+    // const state = reactive(data())
+    // const instance = {
+    //   // 组件实例
+    //   state,
+    //   vnode, // v2中的源码中组建的虚拟节点叫$node  渲染的内容叫_vnode
+    //   subTree: null, // vnode组件的渲染节点 subTree渲染的组件内容
+    //   isMounted: false,
+    //   update: null,
+    //   propsOptions,
+    //   props: {},
+    //   attrs: {},
+    //   proxy: null,
+    // }
+    // // 实例，用户传入的props
+    // initProps(instance, vnode.props)
+    // instance.proxy = new Proxy(instance, {
+    //   get(target, key) {
+    //     const { state, props } = target
+    //     if (state && hasOwn(state, key)) {
+    //       return state[key]
+    //     } else if (props && hasOwn(props, key)) {
+    //       return props[key]
+    //     }
+    //     let getter = publicPropertyMap[key]
+    //     if (getter) {
+    //       return getter(target)
+    //     }
+    //   },
+    //   set(target, key, value) {
+    //     const { state, props } = target
+    //     if (state && hasOwn(state, key)) {
+    //       state[key] = value
+    //       return true
+    //       // 用户操作的属性是代理对象，这里面屏蔽了
+    //       // 但是我们可以通过instance.props 拿到真实的props
+    //     } else if (props && hasOwn(props, key)) {
+    //       console.warn(`attempting to mutate prop ${key as string}`)
+    //       return false
+    //     }
+    //     return false
+    //   },
+    // })
+    // const componentUpdateFn = () => {
+    //   // 区别是初始化还是要更新
+    //   if (!instance.isMounted) {
+    //     const subTree = render.call(instance.proxy) // 作为this ，后续this会改
+    //     patch(null, subTree, container, anchor) // 创造了subTree的真实节点并且插入
+    //     instance.subTree = subTree
+    //     instance.isMounted = true
+    //   } else {
+    //     // 组件内部更新
+    //     const subTree = render.call(instance.proxy) // 作为this ，后续this会改\
+    //     patch(instance.subTree, subTree, container, anchor)
+    //     instance.subTree = subTree
+    //   }
+    // }
+    // // 组件的异步更新
+    // const effect = new ReactiveEffect(componentUpdateFn, () =>
+    //   queueJob(instance.update)
+    // )
+    // let update = (instance.update = effect.run.bind(effect)) // 调用effect.run 强制组件更新
+    // update()
+  }
+  const setupRenderEffect = (instance, container, anchor) => {
+    const { render } = instance
     const componentUpdateFn = () => {
       // 区别是初始化还是要更新
       if (!instance.isMounted) {
-        const subTree = render.call(state) // 作为this ，后续this会改
+        const subTree = render.call(instance.proxy) // 作为this ，后续this会改
         patch(null, subTree, container, anchor) // 创造了subTree的真实节点并且插入
-
         instance.subTree = subTree
-
         instance.isMounted = true
       } else {
         // 组件内部更新
-        const subTree = render.call(state) // 作为this ，后续this会改\
+        const subTree = render.call(instance.proxy) // 作为this ，后续this会改\
         patch(instance.subTree, subTree, container, anchor)
+        instance.subTree = subTree
       }
     }
-
     // 组件的异步更新
     const effect = new ReactiveEffect(componentUpdateFn, () =>
       queueJob(instance.update)
     )
-
     let update = (instance.update = effect.run.bind(effect)) // 调用effect.run 强制组件更新
     update()
   }
@@ -338,7 +403,6 @@ export function createRenderer(
   }
   const patch = (n1: any, n2: any, container: any, anchor = null) => {
     // n2 可能是个文本
-
     if (n1 === n2) return
     if (n1 && !isSameVnode(n1, n2)) {
       unmount(n1)

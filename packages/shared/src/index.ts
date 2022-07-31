@@ -15,6 +15,9 @@ export const isString = (value: any) => {
 export const isArray = Array.isArray
 export const assign = Object.assign
 
+const hasOwnProperty = Object.prototype.hasOwnProperty
+export const hasOwn = (value, key) => hasOwnProperty.call(value, key)
+
 export const enum ShapeFlags {
   ELEMENT = 1, // HTML 或 SVG 标签 普通 DOM 元素
   FUNCTIONAL_COMPONENT = 1 << 1, // 函数式组件
