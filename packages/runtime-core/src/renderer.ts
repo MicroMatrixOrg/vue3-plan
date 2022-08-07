@@ -1,5 +1,11 @@
 import { ReactiveEffect } from '@vue/reactivity'
-import { isString, ShapeFlags } from '@vue/shared'
+import {
+  invokeArrayFns,
+  isArray,
+  isNumber,
+  isString,
+  ShapeFlags,
+} from '@vue/shared'
 import { createComponentsInstance, setupComponent } from './component'
 import { hasPropsChanged, updateProps } from './componentProps'
 import { queueJob } from './scheduler'
@@ -33,17 +39,18 @@ export function createRenderer(
     patchProp: hostPatchProp,
   } = renerOptions
 
-  const normalize = (child, i) => {
-    if (isString(child[i])) {
-      let vnode = createVnode(Text, null, child[i])
-      child[i] = vnode
-    }
-    return child[i]
+  const normalize = (child) => {
+    if (isString(child) || isNumber(child)) {
+      let vnode = createVnode(Text, null, child)
+      return vnode
+    } else if (isArray(child)) return createVnode(Fragment, null, child.slice())
+    return child
   }
 
   function mountChildren(children: string | any[], container: any) {
     for (let i = 0; i < children.length; i++) {
-      let child = normalize(children, i) // 处理之后要进行替换，否则children中存放的已经是字符串
+      let child = normalize(children[i]) // 处理之后要进行替换，否则children中存放的已经是字符串
+
       patch(null, child, container)
     }
   }
@@ -167,7 +174,7 @@ export function createRenderer(
     console.log(i, e1, e2)
     let s1 = i
     let s2 = i
-
+    debugger
     const keyToNewIndexMap = new Map()
     for (let i = s2; i <= e2; i++) {
       keyToNewIndexMap.set(c2[i].key, i)
@@ -242,6 +249,8 @@ export function createRenderer(
         unmountChildren(c1)
       }
       if (c1 !== c2) {
+        console.log(c1, c2)
+
         // | 文本   | 文本        | 更新文本即可 |
         hostSetElementText(el, c2)
       }
@@ -266,6 +275,12 @@ export function createRenderer(
     }
   }
 
+  const patchBlockChildren = (n1, n2) => {
+    for (let i = 0; i < n2.dynamicChildren.length; i++) {
+      patchElement(n1.dynamicChildren[i], n2.dynamicChildren[i])
+    }
+  }
+
   const patchElement = (n1, n2) => {
     // 先复用节点，再比较属性，最后比较儿子
     let el = (n2.el = n1.el)
@@ -273,8 +288,15 @@ export function createRenderer(
     let newProps = n2.props || {}
 
     patchProps(oldProps, newProps, el)
+    // n2 = normalize(n2)
 
-    patchChildren(n1, n2, el)
+    // 这里的patchChildren 是一个全量的diff算法
+    if (n2.dynamicChildren) {
+      // 元素之间的优化， 靶向更新
+      patchBlockChildren(n1, n2)
+    } else {
+      patchChildren(n1, n2, el)
+    }
   }
 
   const processElement = (n1, n2, container, anchor) => {
@@ -293,10 +315,6 @@ export function createRenderer(
     }
   }
 
-  const publicPropertyMap = {
-    $attrs: (i) => i.attrs,
-  }
-
   const mountComponent = (vnode, container, anchor) => {
     // 1. 创造一个实例
     let instance = (vnode.component = createComponentsInstance(vnode))
@@ -305,31 +323,50 @@ export function createRenderer(
     // 3. 创建一个effect
     setupRenderEffect(instance, container, anchor)
   }
+
   const updateComponentPreRender = (instance, next) => {
     instance.next = null // next清空
     instance.vnode = next // 实例上最新的虚拟节点
     updateProps(instance.props, next.props)
   }
+
   const setupRenderEffect = (instance, container, anchor) => {
     const { render } = instance
     const componentUpdateFn = () => {
       // 区别是初始化还是要更新
       if (!instance.isMounted) {
-        const subTree = render.call(instance.proxy) // 作为this ，后续this会改
+        let { bm, m } = instance
+        if (bm) {
+          invokeArrayFns(bm)
+        }
+
+        const subTree = render.call(instance.proxy, instance.proxy) // 作为this ，后续this会改
         patch(null, subTree, container, anchor) // 创造了subTree的真实节点并且插入
+
+        if (m) {
+          invokeArrayFns(m)
+        }
         instance.subTree = subTree
         instance.isMounted = true
       } else {
-        let { next } = instance
+        let { next, bu, u } = instance
+        if (bu) {
+          invokeArrayFns(bu)
+        }
+
         if (next) {
-          // 更新钱 ，我也需要拿到最新的属性更新
+          // 更新前 ，我也需要拿到最新的属性更新
           updateComponentPreRender(instance, next)
         }
 
         // 组件内部更新
-        const subTree = render.call(instance.proxy) // 作为this ，后续this会改\
+        const subTree = render.call(instance.proxy, instance.proxy) // 作为this ，后续this会改\
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
+
+        if (u) {
+          invokeArrayFns(u)
+        }
       }
     }
     // 组件的异步更新
@@ -373,6 +410,7 @@ export function createRenderer(
   }
   const patch = (n1: any, n2: any, container: any, anchor = null) => {
     // n2 可能是个文本
+
     if (n1 === n2) return
     if (n1 && !isSameVnode(n1, n2)) {
       unmount(n1)

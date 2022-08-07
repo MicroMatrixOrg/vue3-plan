@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="./dist/runtime-dom.global.js"></script>
+    <!-- <script src="../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+
+    <script>
+      let {
+        createRenderer,
+        h,
+        render,
+        Text,
+        Fragment,
+        toRefs,
+        ref,
+        onBeforeMount,
+        onMounted,
+        onBeforeUpdate,
+        onUpdated,
+        reactive,
+        getCurrentInstace,
+      } = VueRuntimeDOM
+
+      const useCounter = () => {
+        const state = reactive({ count: 1 })
+
+        const handleClick = () => {
+          state.count++
+        }
+
+        onBeforeMount(() => {
+          // 生命周期会自动的和当前的组件关联起来
+          console.log(getCurrentInstace())
+          console.log('before mount')
+        })
+
+        onMounted(() => {
+          console.log('mounted')
+        })
+
+        onBeforeUpdate(() => {
+          console.log('before update')
+        })
+
+        onUpdated(() => {
+          console.log('updated')
+        })
+
+        return { state, handleClick }
+      }
+
+      const VueComponent = {
+        setup() {
+          console.log(useCounter())
+          const { state, handleClick } = useCounter()
+          return {
+            ...toRefs(state),
+            handleClick,
+          }
+        },
+        render() {
+          console.log('render')
+          return h('h', { onClick: this.handleClick }, this.count.value)
+        },
+      }
+
+      render(h(VueComponent), app)
+    </script>
+  </body>
+</html>

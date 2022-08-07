@@ -15,7 +15,7 @@ export function isSameVnode(n1, n2) {
 
 // 虚拟节点有很多： 组件， 元素的、 文本的
 // 先写元素
-export function createVnode(type, props, children = null) {
+export function createVnode(type, props, children = null, patchFlag = 0) {
   let shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : isObject(type)
@@ -32,12 +32,15 @@ export function createVnode(type, props, children = null) {
     key: props?.['key'],
     __v_isVnode: true,
     shapeFlag,
+    patchFlag,
   }
 
   if (children) {
     let type = 0
     if (isArray(children)) {
       type = ShapeFlags.ARRAY_CHILDREN
+    } else if (isObject(children)) {
+      type = ShapeFlags.SLOTS_CHILDREN
     } else {
       children = String(children)
       type = ShapeFlags.TEXT_CHILDREN
@@ -45,5 +48,39 @@ export function createVnode(type, props, children = null) {
     vnode.shapeFlag |= type
   }
 
+  if (currentBlock && vnode.patchFlag > 0) {
+    currentBlock.push(vnode)
+  }
+
   return vnode
+}
+
+export { createVnode as createElementVNode }
+
+let currentBlock = null
+
+export function openBlock() {
+  currentBlock = [] // 用一个数组来收集多个动态节点
+}
+
+export function createElementBlock(type, props, children, patchFlag) {
+  return setupBlock(createVnode(type, props, children, patchFlag))
+}
+
+function setupBlock(vnode) {
+  vnode.dynamicChildren = currentBlock
+  currentBlock = null
+  return vnode
+}
+
+// export function createElementVNode() {}
+
+export function toDisplayString(val) {
+  return isString(val)
+    ? val
+    : val === null
+    ? ''
+    : isObject(val)
+    ? JSON.stringify(val)
+    : String(val)
 }

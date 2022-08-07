@@ -1,6 +1,10 @@
 import { proxyRefs, reactive } from '@vue/reactivity'
-import { hasOwn, isFunction, isObject } from '@vue/shared'
+import { hasOwn, isFunction, isObject, ShapeFlags } from '@vue/shared'
 import { initProps } from './componentProps'
+
+export let currentInstance = null
+export const setCurrentInstace = (instance) => (currentInstance = instance)
+export const getCurrentInstace = () => currentInstance
 
 export function createComponentsInstance(vnode) {
   const instance = {
@@ -16,11 +20,13 @@ export function createComponentsInstance(vnode) {
     proxy: null,
     render: null,
     setupState: false,
+    slots: {},
   }
   return instance
 }
 const publicPropertyMap = {
   $attrs: (i) => i.attrs,
+  $slots: (i) => i.slots,
 }
 
 const publicInstanceProsy = {
@@ -55,11 +61,19 @@ const publicInstanceProsy = {
     return false
   },
 }
+
+function initSlots(instance, children) {
+  if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+    instance.slots = children // 保留children
+  }
+}
+
 export function setupComponent(instance) {
-  let { props, type } = instance.vnode // 这个就是用户写的内容
+  let { props, type, children } = instance.vnode // 这个就是用户写的内容
 
   // // 实例，用户传入的props
   initProps(instance, props)
+  initSlots(instance, children) // 初始化插槽
 
   instance.proxy = new Proxy(instance, publicInstanceProsy)
 
@@ -71,9 +85,22 @@ export function setupComponent(instance) {
 
   let setup = type.setup
   if (setup) {
-    const setupContext = {}
-    const setupResult = setup(instance.props, setupContext)
+    // 典型的发布订阅模式
+    const setupContext = {
+      emit: (event, ...args) => {
+        const eventName = `on${event[0].toUpperCase() + event.slice(1)}`
+        // 找到虚拟节点的属性有存放props
+        const handler = instance.vnode.props[eventName]
+        console.log(instance)
 
+        handler && handler(...args)
+      },
+      attrs: instance.attrs,
+      slots: instance.slots,
+    }
+    setCurrentInstace(instance)
+    const setupResult = setup(instance.props, setupContext)
+    setCurrentInstace(null)
     if (isFunction(setupResult)) {
       instance.render = setupResult
     } else if (isObject(setupResult)) {

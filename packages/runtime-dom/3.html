@@ -18,7 +18,7 @@
           address: String,
         },
         setup(props) {
-          const name = ref('珠峰')
+          const name = ref('张三')
           const age = ref('14')
 
           return {
@@ -31,7 +31,8 @@
           setTimeout(() => {
             this.age++
           }, 1000)
-          return h(Fragment, this.name + this.age + this.address)
+
+          return h(Fragment, [this.name, this.age, this.address])
         },
       }
 
