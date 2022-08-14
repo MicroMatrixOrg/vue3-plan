@@ -11,18 +11,9 @@
 
     <script>
       let { compile } = VueCompilerCore
-      // 解析是一个个字符串进行判断，解析完毕之后删除掉
-      // let r = compile(`a
 
-      // bc <a></a> {{abc}}`)
+      let r = compile(`<div>{{aaa}} 123</div>`)
       // console.log(r)
-
-      // let r = compile(` {{ aaa }} `)
-      // console.log(r)
-      // let r = compile(`<div></div> 123`)
-      // let r = compile(`<div > 123</div> `)
-      let r = compile(`<div a='1'></div> 123`)
-      console.log(r)
     </script>
   </body>
 </html>
