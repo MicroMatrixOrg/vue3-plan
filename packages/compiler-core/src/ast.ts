@@ -5,7 +5,7 @@ export const enum NodeTypes {
   COMMENT, // 注释
   SIMPLE_EXPRESSION, // 简单表达式  :a="aa"
   INTERPOLATION, // 模板表达式 {{ aaa }}
-  ATTARIBUTE,
+  ATTRIBUTE,
   DIRECTIVE,
   COMPOUND_EXPRESSION, // 复合表达式 {{ aa }} abc
   IF,
