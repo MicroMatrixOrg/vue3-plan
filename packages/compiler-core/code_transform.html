@@ -12,8 +12,8 @@
     <script>
       let { compile } = VueCompilerCore
 
-      let r = compile(`<div>{{aaa}} 123</div>`)
-      // console.log(r)
+      let r = compile(`<div a="1" b="2">{{aaa}} 123  </div><span></span>`)
+      console.log(r)
     </script>
   </body>
 </html>
